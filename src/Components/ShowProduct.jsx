@@ -1,108 +1,158 @@
-import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
-
- const products = [
-  { id: 1, name: "Luxury Watch", price: "$299", image: "https://ad.kapoorwatch.com/content/images/product/525.CO.0180.LR.DEL25-400.webp" },
-  { id: 2, name: "Smart Headphones", price: "$199", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAJHnWieMbS6-ArTo3urrlPQTBfg9YCeRfxg&s" },
-  { id: 3, name: "Leather Bag", price: "$149", image: "https://via.placeholder.com/300x300" },
-  { id: 4, name: "Sunglasses", price: "$89", image: "https://via.placeholder.com/300x300" },
-  
-];
+import React, { useState, useEffect, useRef } from "react";
+import { X, Heart, ShoppingCart, Filter } from "lucide-react";
+import { motion } from "framer-motion";
+import axios from "axios";
 
 const ShowProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [Product, setProduct] = useState([]);
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? products
-      : products.filter((p) => p.name.includes(selectedCategory));
+  // SWIPE CLOSE REF
+  const sidebarRef = useRef(null);
+  let touchStartX = 0;
+
+  const handleTouchStart = (e) => {
+    touchStartX = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    const currentX = e.touches[0].clientX;
+    if (touchStartX - currentX > 60) {
+      setSidebarOpen(false);
+    }
+  };
+
+
+
+
+  
+  // Fetch product
+  useEffect(() => {
+    const GetData = async () => {
+      try {
+        const Data = await axios.get("https://localhost:7216/api/Product/GetAll");
+        setProduct(Data.data.data);
+      } catch (error) {
+        alert(error);
+      }
+    };
+    GetData();
+  }, []);
+  
+
+
 
   return (
-    <div className="flex ">
-      {/* Sidebar for desktop/tablet with auto width */}
-      <div className="hidden md:flex flex-shrink-0 h-screen sticky bg-white shadow-lg p-4 overflow-y-auto z-20 max-w-max">
-        <Filters selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-      </div>
+    <div className="lg:flex-row flex-col flex bg-gradient-to-br from-white via-purple-50 to-white">
 
-      {/* Mobile Sidebar */}
+      {/* SIDEBAR (Static for Desktop, Sliding for Mobile/Tablet) */}
       <div
-        className={`fixed top-0 left-0 h-screen w-64 bg-white shadow-lg p-6 overflow-y-auto z-30 transform transition-transform duration-300 md:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        ref={sidebarRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        className={`lg:flex w-64 lg:w-48 h-screen bg-white shadow-xl p-6 
+        ${sidebarOpen ? "fixed top-0 left-0 z-40 transform translate-x-0 transition" : "hidden lg:flex"} 
+        ${!sidebarOpen ? "lg:sticky lg:top-0" : ""}`}
       >
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 lg:hidden">
           <h3 className="text-xl font-semibold">Filters</h3>
           <button onClick={() => setSidebarOpen(false)}>
             <X size={24} />
           </button>
         </div>
-        <Filters selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+
+        <Filters
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+        />
       </div>
 
-      {/* Mobile toggle button */}
+      {/* BACKDROP (Mobile/Tablet) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* FLOATING TOGGLE BUTTON (Mobile/Tablet) */}
       <button
-        className="fixed top-6 left-6 z-40 md:hidden p-2 bg-indigo-600 text-white rounded-lg shadow-lg"
+        className="fixed bottom-6 left-6 z-50 lg:hidden p-4 bg-purple-600 
+        text-white rounded-full shadow-2xl"
         onClick={() => setSidebarOpen(true)}
       >
-        <Menu size={24} />
+        <Filter size={24} />
       </button>
 
-      {/* Product Grid */}
-     {/* Product Grid */}
-<section className="flex-1 p-4 md:p-0 m-2 overflow-y-auto h-screen">
-  <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center">Our Products</h2>
+      {/* PRODUCT GRID */}
+      <section className="flex-1 px-6 py-10">
+        <h3 className="text-3xl font-bold mb-6">Trending Products</h3>
 
-  {/* Horizontal filters only on mobile/tablet */}
-  <div className="mb-4 md:hidden">
-    <Filters selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} horizontal />
-  </div>
+        {/* PRODUCT LIST */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Product.map((p) => (
+            <motion.div
+              key={p.id}
+              className="bg-white p-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all group"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-full h-56 overflow-hidden rounded-xl">
+                <img
+                  src={p.imagePath}
+                  className="w-full h-full object-fill group-hover:scale-110 transition"
+                />
+              </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    {filteredProducts.map((product) => (
-      <div
-        key={product.id}
-        className="bg-white rounded-xl shadow-lg overflow-hidden transform transition duration-500 hover:scale-105 hover:shadow-2xl"
-      >
-        <div className="relative group">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-48 md:h-56 lg:h-60 object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+              <div className="mt-3 flex justify-between">
+                <h4 className="font-semibold text-lg">{p.name}</h4>
+                <Heart className="w-5 h-5 text-gray-500 hover:text-red-500 cursor-pointer" />
+              </div>
+
+              <div className="flex gap-2">
+                <p className="text-purple-600 font-bold mt-1">₹ {p.price}</p>
+                <p className="text-purple-600 font-bold mt-1">
+                  ₹<del>{p.price + 15540}</del>
+                </p>
+              </div>
+
+              <p className="text-purple-600 font-bold mt-1">
+                {p.description}
+              </p>
+
+              <div className="flex flex-row gap-3">
+                <button className="mt-3 w-full bg-purple-600 text-white py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-purple-700 transition">
+                  <ShoppingCart className="w-5 h-5" />
+                  Cart
+                </button>
+
+                <button className="mt-3 w-full bg-purple-600 text-white py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-purple-700 transition">
+                  Buy Now
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </div>
-        <div className="p-4 space-y-2">
-          <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
-          <p className="text-indigo-600 font-bold">{product.price}</p>
-          <div className="flex space-x-2 mt-2">
-            <button className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
-              Add to Cart
-            </button>
-            <button className="flex-1 px-3 py-2 border border-indigo-600 text-indigo-600 text-sm font-medium rounded-lg hover:bg-indigo-600 hover:text-white transition">
-              Buy Now
-            </button>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-</section>
-
+      </section>
     </div>
   );
 };
 
-// Unified Filters component
-const Filters = ({ selectedCategory, setSelectedCategory, horizontal }) => (
+/* --------------------- FILTER COMPONENT --------------------- */
+const Filters = ({ selectedCategory, setSelectedCategory }) => (
   <div>
-    <h4 className="font-medium mb-2">Category</h4>
-    <div className={`flex ${horizontal ? "flex-wrap" : "flex-col"} gap-2`}>
+    <h4 className="font-semibold mb-3 text-lg">Category</h4>
+
+    <div className="flex flex-col lg:flex-col md:flex-row flex-wrap gap-3">
       {["All", "Watch", "Headphones", "Bag", "Sunglasses"].map((cat) => (
         <label
           key={cat}
-          className={`flex-1 min-w-[70px] px-2 py-1 border rounded-lg text-center cursor-pointer ${
+          className={`px-3 py-2 rounded-xl text-center cursor-pointer border shadow-sm 
+          ${
             selectedCategory === cat
-              ? "bg-indigo-600 text-white border-indigo-600"
+              ? "bg-purple-600 text-white border-purple-600"
               : "bg-white text-gray-700 border-gray-300"
           }`}
         >
@@ -119,13 +169,12 @@ const Filters = ({ selectedCategory, setSelectedCategory, horizontal }) => (
       ))}
     </div>
 
-    {/* Price Filter */}
-    <div className="mt-2">
-      <h4 className="font-medium mb-2">Price</h4>
-      {["$0 - $100", "$100 - $200", "$200+"].map((price) => (
-        <div key={price} className="flex items-center gap-2 mb-1">
-          <input type="checkbox" className="accent-indigo-600" />
-          <label className="text-gray-700">{price}</label>
+    <div className="mt-6">
+      <h4 className="font-semibold mb-2 text-lg">Price</h4>
+      {["₹0 - ₹1000", "₹1000 - ₹5000", "₹5000+"].map((price) => (
+        <div key={price} className="flex gap-2 mb-2">
+          <input type="checkbox" className="accent-purple-600" />
+          <label>{price}</label>
         </div>
       ))}
     </div>

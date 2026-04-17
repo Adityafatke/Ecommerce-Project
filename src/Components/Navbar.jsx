@@ -44,8 +44,8 @@ export default function Navbar() {
               path: "/Products",
             },
             {
-              nav: "About",
-              path: "/About",
+              nav: "UpdateProduct",
+              path: "/UpdateProduct",
             },
             { nav: "Contact",
               path: "/Contact" },].map((item, i) => (
